@@ -9,6 +9,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
 
+import static java.lang.System.currentTimeMillis;
+
 public class Main {
     // Main.java [dictionary] [input file]
     // Main.java [dictionary]
@@ -86,30 +88,43 @@ class DictionaryAttack {
     }
     // Decodes a given hash and returns the value
     public String processHash(String hash) throws IOException {
+        long startTime = System.currentTimeMillis();
+        long endTime = 0;
         MessageDigest md = null;
         try{
             md = MessageDigest.getInstance("MD5");
         } catch(NoSuchAlgorithmException e){
             System.out.println("No such algorithm");
         }
-        String guessHash;
+        String tempHash;
         System.out.println("Cracking hash " + hash + "...");
         BufferedReader br = new BufferedReader(new FileReader(dictPath));
         String dictLine = br.readLine();
         while(dictLine != null){
-            md.update(dictLine.getBytes());
-            byte[] digest = md.digest();
-            guessHash = DatatypeConverter.printHexBinary(digest).toLowerCase();
-            //System.out.println("Guess Hash: " + guessHash);
-            if(guessHash == hash){
-                System.out.println("Password found: " + dictLine);
+            // Hash value from dictionary
+            byte[] digest = md.digest(dictLine.getBytes());
+            tempHash = DatatypeConverter.printHexBinary(digest).toLowerCase();
+
+            //System.out.println("Guessing " + dictLine + " with hash " + tempHash.toString() + " " + hash);
+            if(tempHash.equals(hash)){
+                endTime = System.currentTimeMillis();
+                float elapsedTime = (endTime - startTime)/1000f;
+                System.err.println("| Password found: " + dictLine);
+                System.err.println("| It took " + elapsedTime + "s");
+                System.out.println("-------------------------------------------------");
+                br.close();
                 return dictLine;
             }
             else{
                 dictLine = br.readLine();
             }
         }
-        System.out.println("--------------------------------------------");
+        br.close();
+        System.err.println("| Password not found");
+        endTime = System.currentTimeMillis();
+        float elapsedTime = (endTime - startTime)/1000f;
+        System.err.println("| It took " + elapsedTime + "s");
+        System.out.println("-------------------------------------------------");
         return null;
     }
 
